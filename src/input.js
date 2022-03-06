@@ -1,53 +1,113 @@
-export default class InputHandler {
+export class InputHandler {
     constructor(game) {
         this.game = game;
-        this.numKeyHold = 0;
+        this.keyInput = new KeyInput(game);
 
         document.addEventListener("keydown", (event) => {
-            switch (event.keyCode) {
-                case 37:
-                    if (this.game.paddle.speed >= 0) {
-                        this.numKeyHold++;
-                        this.game.paddle.moveLeft();
-                    }
-                    break;
-                case 39:
-                    if (this.game.paddle.speed <= 0) {
-                        this.numKeyHold++;
-                        this.game.paddle.moveRight();
-                    }
-                    break;
-                case 27:
-                    this.game.togglePaused();
-                    break;
-                case 32:
-                    this.game.start();
-                    break;
-                default:
-                // console.log(event.keyCode);
-            }
+            this.keyInput.keyDown(event.key);
         });
 
         document.addEventListener("keyup", (event) => {
-            switch (event.keyCode) {
-                case 37:
-                    this.numKeyHold--;
-                    if (this.numKeyHold === 0) {
-                        this.game.paddle.stop();
-                    } else {
-                        this.game.paddle.moveRight();
-                    }
-                    break;
-                case 39:
-                    this.numKeyHold--;
-                    if (this.numKeyHold === 0) {
-                        this.game.paddle.stop();
-                    } else {
-                        this.game.paddle.moveLeft();
-                    }
-                    break;
-                default:
-            }
+            this.keyInput.keyUp(event.key);
         });
+    }
+}
+
+class KeyInput {
+    constructor(game) {
+        this.game = game;
+        this.keyHeld = [];
+        this.conflictingKeys = [
+            ["ArrowLeft", "ArrowRight"],
+            ["ArrowUp", "ArrowDown"],
+        ];
+        this.equivalentKeys = {
+            a: "ArrowLeft",
+            d: "ArrowRight",
+            w: "ArrowUp",
+            s: "ArrowDown",
+        };
+    }
+
+    keyDown(key) {
+        this.keyHeld = this.keyHeld.filter((item) => item != key);
+        this.keyHeld.push(key);
+        this.keyAction();
+    }
+
+    keyUp(key) {
+        if (!this.keyHeld.includes(key)) {
+            console.log("Error: keyHeld does not have keys that're pressed!");
+        }
+        this.keyHeld.splice(this.keyHeld.indexOf(key), 1);
+        this.keyAction();
+    }
+
+    keyAction() {
+        let lastKey = this.keyHeld[this.keyHeld.length - 1];
+
+        switch (lastKey) {
+            case " ":
+                this.game.newGame();
+                break;
+            case "Esc":
+                this.game.togglePaused();
+                break;
+            default:
+        }
+
+        let paddle = this.game.gamePanel.paddle;
+        let activeConflictingKeys = this.activeConflictingKeys();
+        if (activeConflictingKeys.includes("ArrowLeft")) {
+            if (activeConflictingKeys.includes("ArrowUp")) {
+                paddle.setVelocityAngle(135);
+            } else if (activeConflictingKeys.includes("ArrowDown")) {
+                paddle.setVelocityAngle(-135);
+            } else {
+                paddle.setVelocityAngle(180);
+            }
+        } else if (activeConflictingKeys.includes("ArrowRight")) {
+            if (activeConflictingKeys.includes("ArrowUp")) {
+                paddle.setVelocityAngle(45);
+            } else if (activeConflictingKeys.includes("ArrowDown")) {
+                paddle.setVelocityAngle(-45);
+            } else {
+                paddle.setVelocityAngle(0);
+            }
+        } else {
+            if (activeConflictingKeys.includes("ArrowUp")) {
+                paddle.setVelocityAngle(90);
+            } else if (activeConflictingKeys.includes("ArrowDown")) {
+                paddle.setVelocityAngle(-90);
+            } else {
+                paddle.stop();
+            }
+        }
+    }
+
+    activeConflictingKeys() {
+        let activeConflictingKeys = [];
+        let keys = [...this.keyHeld];
+        let conflictingKeysOccupied = Array(this.conflictingKeys.length).fill(
+            false
+        );
+
+        while (keys.length > 0) {
+            let key = keys.pop();
+            if (key in this.equivalentKeys) {
+                key = this.equivalentKeys[key];
+            }
+            for (let i = 0; i < this.conflictingKeys.length; i++) {
+                if (
+                    !conflictingKeysOccupied[i] &&
+                    this.conflictingKeys[i].includes(key)
+                ) {
+                    conflictingKeysOccupied[i] = true;
+                    activeConflictingKeys.push(key);
+                    break;
+                }
+            }
+        }
+        return activeConflictingKeys;
     }
 }

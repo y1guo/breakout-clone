@@ -1,11 +1,12 @@
-import detectCollision from "./detectCollision";
+import { detectCollision } from "./detectCollision";
+import { SquareObject } from "./object";
 
-export default class Brick {
-    constructor(game, position) {
-        this.game = game;
-        this.width = game.brickWidth;
-        this.height = game.brickHeight;
-        this.position = position;
+export class Brick extends SquareObject {
+    constructor(gamePanel, size, position) {
+        super();
+        this.gamePanel = gamePanel;
+        this.setSize(size.x, size.y);
+        this.setPosition(position.x, position.y);
         this.markedForDeletion = false;
         this.color = "#f";
         for (let i = 0; i < 2; i++) {
@@ -14,19 +15,21 @@ export default class Brick {
     }
 
     update() {
-        if (detectCollision(this.game.ball, this)) {
+        if (detectCollision(this.gamePanel.ball, this)) {
             this.markedForDeletion = true;
-            this.game.ball.speed.y *= -1;
+            let ballVelocity = this.gamePanel.ball.velocity();
+            this.gamePanel.ball.setVelocity(ballVelocity.x, -ballVelocity.y);
         }
     }
 
     draw() {
-        this.game.ctx.fillStyle = this.color;
-        this.game.ctx.fillRect(
-            this.position.x,
-            this.position.y,
-            this.width,
-            this.height
+        let ctx = this.gamePanel.game.ctx;
+        ctx.fillStyle = this.color;
+        ctx.fillRect(
+            this.position().x,
+            this.position().y,
+            this.width(),
+            this.height()
         );
     }
 }

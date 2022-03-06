@@ -1,82 +1,73 @@
-import detectCollision from "/src/detectCollision";
+import { detectCollision } from "./detectCollision";
+import { SquareObject } from "./object";
 
-export default class Ball {
-    constructor(game) {
-        this.image = document.getElementById("imgBall");
-        this.game = game;
-        this.size = game.ballSize;
-        this.reset();
-    }
-
-    reset() {
-        this.position = {
-            x: (this.game.gameWidth - this.size) * 0.5,
-            y: this.game.gameHeight * 0.9
-        };
-        this.speed = {
-            x: (this.game.gameWidth / 5000) * Math.random(),
-            y: -this.game.gameWidth / 2000
-        };
-        this.angle = 0;
-        this.angularSpeed = -this.speed.x / (0.5 * this.size);
+export class Ball extends SquareObject {
+    constructor(gamePanel) {
+        super();
+        this.image = document.getElementById("img-ball");
+        this.gamePanel = gamePanel;
+        this.friction = 5e-4;
+        this.gravity = 3e-4;
+        this.bounceLoss = 0.1;
     }
 
     update(deltaTime) {
-        this.position.x += this.speed.x * deltaTime;
-        this.position.y += this.speed.y * deltaTime;
-        this.angle += this.angularSpeed * deltaTime;
+        this.autoMove(deltaTime);
 
-        let center = {
-            x: this.position.x + this.size / 2,
-            y: this.position.y + this.size / 2
-        };
+        // friction and gravity
+        let velocity = this.velocity();
+        velocity.x *= 1 - this.friction;
+        velocity.y *= 1 - this.friction;
+        velocity.y += this.gravity * deltaTime;
+        this.setVelocity(velocity.x, velocity.y);
 
         // wall bounce
-        if (center.x < 0) {
-            center.x = -center.x;
-            this.speed.x = -this.speed.x;
-        } else if (center.x > this.game.gameWidth) {
-            center.x = 2 * this.game.gameWidth - center.x;
-            this.speed.x = -this.speed.x;
+        let center = this.center();
+        let wall = this.gamePanel.edge();
+        velocity = this.velocity();
+        if (center.x < wall.left) {
+            this.setCenter(2 * wall.left - center.x, center.y);
+            this.setVelocity(-velocity.x * (1 - this.bounceLoss), velocity.y);
         }
-        if (center.y < 0) {
-            center.y = -center.y;
-            this.speed.y = -this.speed.y;
+        if (center.x > wall.right) {
+            this.setCenter(2 * wall.right - center.x, center.y);
+            this.setVelocity(-velocity.x * (1 - this.bounceLoss), velocity.y);
         }
-        if (this.position.y > this.game.gameHeight) {
-            this.game.gameover();
+        if (center.y < wall.top) {
+            this.setCenter(center.x, 2 * wall.top - center.y);
+            this.setVelocity(velocity.x, -velocity.y * (1 - this.bounceLoss));
         }
 
         // paddle bounce
-        if (detectCollision(this, this.game.paddle)) {
-            center.y = 2 * this.game.paddle.position.y - center.y;
-            this.speed.y = -this.speed.y;
-            this.speed.x += this.game.paddle.speed * 0.2;
-            this.angularSpeed = -this.speed.x / (0.5 * this.size);
+        let angularVelocity = this.angularVelocity();
+        let paddle = this.gamePanel.paddle;
+        center = this.center();
+        velocity = this.velocity();
+        if (detectCollision(this, paddle)) {
+            this.setCenter(center.x, 2 * paddle.edge().top - center.y);
+            this.setVelocity(
+                velocity.x + paddle.velocity().x * 0.4,
+                (-velocity.y + 1.5 * paddle.velocity().y) *
+                    (1 - this.bounceLoss)
+            );
+            angularVelocity +=
+                (velocity.x - paddle.velocity().x) / (this.width() / 2);
+            this.setAngularVelocity(angularVelocity);
         }
-
-        this.position = {
-            x: center.x - this.size / 2,
-            y: center.y - this.size / 2
-        };
     }
 
     draw() {
-        let center = {
-            x: this.position.x + this.size / 2,
-            y: this.position.y + this.size / 2
-        };
-
-        this.game.ctx.translate(center.x, center.y);
-        this.game.ctx.rotate(this.angle);
-        this.game.ctx.drawImage(
+        let ctx = this.gamePanel.game.ctx;
+        ctx.translate(this.center().x, this.center().y);
+        ctx.rotate(this.angle());
+        ctx.drawImage(
             this.image,
-            -this.size / 2,
-            -this.size / 2,
-            this.size,
-            this.size
+            -this.width() / 2,
+            -this.height() / 2,
+            this.width(),
+            this.height()
         );
-        this.game.ctx.rotate(-this.angle);
-        this.game.ctx.translate(-center.x, -center.y);
+        ctx.rotate(-this.angle());
+        ctx.translate(-this.center().x, -this.center().y);
     }
 }

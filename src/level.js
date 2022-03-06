@@ -1,17 +1,27 @@
-import Brick from "/src/brick";
+import { Brick } from "./brick";
 
-export default function buildLevel(game) {
+export function buildLevel(gamePanel) {
     let bricks = [];
+    let settings = gamePanel.game.settings;
+    let rowMin = settings.brickNumRowMin;
+    let rowMax = settings.brickNumRowMax;
+    let numCol = settings.brickNumCol;
+    let brickWidth = gamePanel.width() / numCol;
+    let brickHeight = brickWidth / 2;
 
-    let numRow = 4 + Math.random() * 6;
+    let numRow = rowMin + Math.random() * (rowMax - rowMin);
     for (let i = 0; i < numRow; i++) {
-        for (let j = 0; j < 10; j++) {
+        for (let j = 0; j < numCol; j++) {
             if (Math.random() < 0.7) {
-                let position = {
-                    x: game.brickWidth * j,
-                    y: game.brickHeight * i
+                let size = {
+                    x: brickWidth,
+                    y: brickHeight,
                 };
-                bricks.push(new Brick(game, position));
+                let position = {
+                    x: gamePanel.position().x + brickWidth * j,
+                    y: gamePanel.position().y + brickHeight * i,
+                };
+                bricks.push(new Brick(gamePanel, size, position));
             }
         }
     }

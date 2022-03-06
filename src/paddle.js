@@ -1,50 +1,43 @@
-export default class Paddle {
-    constructor(game) {
-        this.game = game;
-        this.width = game.paddleWidth;
-        this.height = game.paddleHeight;
-        this.maxSpeed = game.gameWidth / 1000;
-        this.reset();
+import { SquareObject } from "./object";
+
+export class Paddle extends SquareObject {
+    constructor(gamePanel) {
+        super();
+        this.gamePanel = gamePanel;
+        this.maxSpeed = gamePanel.game.settings.paddleMaxSpeed;
     }
 
-    reset() {
-        this.position = {
-            x: (this.game.gameWidth - this.width) / 2,
-            y: this.game.gameHeight * 0.98 - this.height
-        };
-        this.speed = 0;
-    }
-
-    draw() {
-        this.game.ctx.fillStyle = "#fce";
-        this.game.ctx.fillRect(
-            this.position.x,
-            this.position.y,
-            this.width,
-            this.height
-        );
-    }
-
-    moveLeft() {
-        this.speed = -this.maxSpeed;
-    }
-
-    moveRight() {
-        this.speed = this.maxSpeed;
+    setVelocityAngle(angle) {
+        angle *= Math.PI / 180;
+        let vx = this.maxSpeed * Math.cos(angle);
+        let vy = -this.maxSpeed * Math.sin(angle);
+        this.setVelocity(vx, vy);
     }
 
     stop() {
-        this.speed = 0;
+        this.setVelocity(0, 0);
     }
 
     update(deltaTime) {
-        this.position.x += this.speed * deltaTime;
+        this.autoMove(deltaTime);
 
-        // paddle stops at the edges
-        if (this.position.x < 0) {
-            this.position.x = 0;
-        } else if (this.position.x > this.game.gameWidth - this.width) {
-            this.position.x = this.game.gameWidth - this.width;
+        // paddle stops at the walls
+        let wall = this.gamePanel.edge();
+        if (this.edge().left < wall.left) {
+            this.setPosition(wall.left, this.position().y);
+        } else if (this.edge().right > wall.right) {
+            this.setPosition(wall.right - this.width(), this.position().y);
         }
+    }
+
+    draw() {
+        let ctx = this.gamePanel.game.ctx;
+        ctx.fillStyle = "#fce";
+        ctx.fillRect(
+            this.position().x,
+            this.position().y,
+            this.width(),
+            this.height()
+        );
     }
 }
