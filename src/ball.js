@@ -6,9 +6,12 @@ export class Ball extends SquareObject {
         super();
         this.image = document.getElementById("img-ball");
         this.gamePanel = gamePanel;
-        this.friction = 5e-4;
-        this.gravity = 3e-4;
-        this.bounceLoss = 0.1;
+        let settings = gamePanel.game.settings;
+        let { frictionFactor, gravityFactor } =
+            gamePanel.game.difficultyFactor();
+        this.friction = settings.friction * frictionFactor;
+        this.gravity = settings.gravity * gravityFactor;
+        this.bounceLoss = settings.bounceLoss;
     }
 
     update(deltaTime) {
@@ -46,7 +49,7 @@ export class Ball extends SquareObject {
         if (detectCollision(this, paddle)) {
             this.setCenter(center.x, 2 * paddle.edge().top - center.y);
             this.setVelocity(
-                velocity.x + paddle.velocity().x * 0.4,
+                0.6 * velocity.x + 0.4 * paddle.velocity().x,
                 (-velocity.y + 1.5 * paddle.velocity().y) *
                     (1 - this.bounceLoss)
             );

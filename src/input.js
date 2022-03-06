@@ -46,14 +46,12 @@ class KeyInput {
     keyAction() {
         let lastKey = this.keyHeld[this.keyHeld.length - 1];
 
-        switch (lastKey) {
-            case " ":
-                this.game.newGame();
-                break;
-            case "Esc":
-                this.game.togglePaused();
-                break;
-            default:
+        if (lastKey === " ") {
+            this.game.newGame();
+        } else if (lastKey === "Escape" || lastKey === "p") {
+            this.game.togglePaused();
+        } else if (lastKey === "=") {
+            this.game.gameState = 4;
         }
 
         let paddle = this.game.gamePanel.paddle;

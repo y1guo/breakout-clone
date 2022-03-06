@@ -10,6 +10,7 @@ const GAMESTATE = {
     MENU: 2,
     GAMEOVER: 3,
     VICTORY: 4,
+    REVIVED: 5,
 };
 
 class TitleScreen extends SquareObject {
@@ -20,7 +21,7 @@ class TitleScreen extends SquareObject {
 
     draw() {
         let ctx = this.game.ctx;
-        ctx.fillStyle = "#222";
+        ctx.fillStyle = "#000";
         ctx.fillRect(
             this.position().x,
             this.position().y,
@@ -31,7 +32,7 @@ class TitleScreen extends SquareObject {
         ctx.font = this.height() * 0.05 + "px Serif";
         ctx.fillStyle = "#fff";
         ctx.textAlign = "center";
-        ctx.fillText("PRESS SPACE TO START", this.center().x, this.center().y);
+        ctx.fillText("Press Space To Start", this.center().x, this.center().y);
     }
 }
 
@@ -54,7 +55,7 @@ class PauseScreen extends SquareObject {
         ctx.font = this.height() * 0.1 + "px Serif";
         ctx.fillStyle = "#fff";
         ctx.textAlign = "center";
-        ctx.fillText("PAUSED", this.center().x, this.center().y);
+        ctx.fillText("Paused", this.center().x, this.center().y);
     }
 }
 
@@ -66,7 +67,7 @@ class VictoryScreen extends SquareObject {
 
     draw() {
         let ctx = this.game.ctx;
-        ctx.fillStyle = "rgba(240, 192, 224, 0.5)";
+        ctx.fillStyle = "rgba(240, 192, 224, 0.9)";
         ctx.fillRect(
             this.position().x,
             this.position().y,
@@ -74,10 +75,21 @@ class VictoryScreen extends SquareObject {
             this.height()
         );
 
-        ctx.font = this.height() * 0.1 + "px Serif";
         ctx.fillStyle = "#fff";
         ctx.textAlign = "center";
-        ctx.fillText("VICTORY", this.center().x, this.center().y);
+        ctx.font = this.height() * 0.1 + "px Serif";
+        ctx.fillText("You Win!", this.center().x, this.center().y);
+        ctx.font = this.height() * 0.05 + "px Serif";
+        ctx.fillText(
+            "Life +1",
+            this.center().x,
+            this.center().y + this.height() * 0.15
+        );
+        ctx.fillText(
+            "Press Space To Continue",
+            this.center().x,
+            this.center().y + this.height() * 0.3
+        );
     }
 }
 
@@ -100,7 +112,7 @@ class GameOverScreen extends SquareObject {
         ctx.font = this.height() * 0.1 + "px Serif";
         ctx.fillStyle = "#fff";
         ctx.textAlign = "center";
-        ctx.fillText("GAMEOVER", this.center().x, this.center().y);
+        ctx.fillText("Game Over", this.center().x, this.center().y);
     }
 }
 
@@ -112,12 +124,84 @@ class InfoPanel extends SquareObject {
 
     draw() {
         let ctx = this.game.ctx;
+        let edge = this.edge();
+        let data = this.game.data;
+        let settings = this.game.settings;
+        let ball = this.game.gamePanel.ball;
+        let { levelFactor, spinFactor } = this.game.scoreFactor();
+        // ctx.fillStyle = "#fff";
+        // ctx.fillRect(
+        //     this.position().x,
+        //     this.position().y,
+        //     this.width(),
+        //     this.height()
+        // );
+
         ctx.fillStyle = "#fff";
-        ctx.fillRect(
-            this.position().x,
-            this.position().y,
-            this.width(),
-            this.height()
+        ctx.font = this.height() * 0.4 + "px Serif";
+        ctx.textAlign = "left";
+        ctx.fillText(
+            "Level " + data.level.toString(),
+            edge.left,
+            this.center().y
+        );
+        ctx.textAlign = "center";
+        ctx.fillText(
+            "Score " + Math.round(data.score).toString(),
+            this.center().x,
+            this.center().y
+        );
+        ctx.textAlign = "right";
+        ctx.fillText(
+            "Life " + data.life.toString(),
+            edge.right,
+            this.center().y
+        );
+        ctx.font = this.height() * 0.2 + "px Serif";
+        ctx.textAlign = "left";
+        ctx.fillText(
+            "Gravity: " +
+                Math.round(ball.gravity / settings.gravity).toString(),
+            edge.left,
+            edge.bottom - this.height() / 4
+        );
+        ctx.fillText(
+            "Friction: " +
+                Math.round(ball.friction / settings.friction).toString() +
+                "  (" +
+                ball.friction.toFixed(2).toString() +
+                ")",
+            edge.left,
+            edge.bottom
+        );
+        ctx.textAlign = "center";
+        ctx.fillText(
+            "From Level: X " + levelFactor.toString(),
+            this.center().x,
+            edge.bottom - this.height() / 4
+        );
+        ctx.fillText(
+            "From Spin: X " + spinFactor.toString(),
+            this.center().x,
+            edge.bottom
+        );
+
+        ctx.fillStyle =
+            "#f" +
+            Math.floor(((8 - spinFactor) / 7) * 15).toString(16) +
+            Math.floor(((8 - spinFactor) / 7) * 15).toString(16);
+        ctx.font = this.height() * 0.4 + "px Serif";
+        ctx.textAlign = "right";
+        ctx.fillText(
+            "Spin: " +
+                Math.round(
+                    Math.abs(
+                        (ball.angularVelocity() * 1000 * 60) / (2 * Math.PI)
+                    )
+                ).toString() +
+                " rpm",
+            edge.right,
+            edge.bottom
         );
     }
 }
@@ -128,7 +212,7 @@ class GamePanel extends SquareObject {
         this.game = game;
     }
 
-    init() {
+    init(bricks) {
         let settings = this.game.settings;
 
         this.paddle = new Paddle(this);
@@ -143,7 +227,7 @@ class GamePanel extends SquareObject {
         this.ball.setCenter(this.paddle.center().x + 1, this.paddle.edge().top);
         this.ball.setVelocity(0, 0);
 
-        this.bricks = buildLevel(this);
+        this.bricks = bricks;
 
         this.gameObjects = [...this.bricks, this.paddle, this.ball];
     }
@@ -152,9 +236,13 @@ class GamePanel extends SquareObject {
         this.gameObjects.forEach((object) => {
             object.update(deltaTime);
         });
+        let numBrick = this.gameObjects.length;
         this.gameObjects = this.gameObjects.filter(
             (object) => !object.markedForDeletion
         );
+        let { levelFactor, spinFactor } = this.game.scoreFactor();
+        this.game.data.score +=
+            (numBrick - this.gameObjects.length) * levelFactor * spinFactor;
     }
 
     draw() {
@@ -223,6 +311,9 @@ export class Game extends SquareObject {
             paddleHeight: 0.025 * this.gamePanel.width(),
             paddleMaxSpeed: this.gamePanel.width() / 2000,
             ballSize: this.gamePanel.width() * 0.08,
+            friction: 5e-4,
+            gravity: 3e-4,
+            bounceLoss: 0.1,
             brickNumRowMin: 4,
             brickNumRowMax: 10,
             brickNumCol: 10,
@@ -234,14 +325,35 @@ export class Game extends SquareObject {
 
     newGame() {
         if (
-            this.gameState === GAMESTATE.MENU ||
-            this.gameState === GAMESTATE.GAMEOVER ||
-            this.gameState === GAMESTATE.VICTORY
+            this.gameState === GAMESTATE.RUNNING ||
+            this.gameState === GAMESTATE.PAUSED
         ) {
-            this.gameState = GAMESTATE.RUNNING;
-            // add del paddle, ball, bricks
-            this.gamePanel.init();
+            return;
         }
+        if (
+            this.gameState === GAMESTATE.MENU ||
+            this.gameState === GAMESTATE.GAMEOVER
+        ) {
+            this.data = {
+                life: 2,
+                score: 0,
+                level: 1,
+            };
+            // add del paddle, ball, bricks
+            this.gamePanel.init(buildLevel(this.gamePanel));
+        } else if (this.gameState === GAMESTATE.VICTORY) {
+            this.data.life += 1;
+            this.data.level += 1;
+            // add del paddle, ball, bricks
+            this.gamePanel.init(buildLevel(this.gamePanel));
+        } else if (this.gameState === GAMESTATE.REVIVED) {
+            this.data.life -= 1;
+            let obj = this.gamePanel.gameObjects;
+            this.gamePanel.init(obj.slice(0, obj.length - 2));
+        } else {
+            console.log("Error: Unknown game state!");
+        }
+        this.gameState = GAMESTATE.RUNNING;
     }
 
     update(deltaTime) {
@@ -251,7 +363,12 @@ export class Game extends SquareObject {
                 this.gameState = GAMESTATE.VICTORY;
             }
             if (this.gamePanel.ball.edge().top > this.gamePanel.edge().bottom) {
-                this.gameState = GAMESTATE.GAMEOVER;
+                if (this.data.life === 0) {
+                    this.gameState = GAMESTATE.GAMEOVER;
+                } else {
+                    this.gameState = GAMESTATE.REVIVED;
+                    this.newGame();
+                }
             }
         }
     }
@@ -294,6 +411,11 @@ export class Game extends SquareObject {
             this.gamePanel.draw();
             this.victoryScreen.draw();
         }
+
+        if (this.gameState === GAMESTATE.REVIVED) {
+            this.infoPanel.draw();
+            this.gamePanel.draw();
+        }
     }
 
     togglePaused() {
@@ -302,5 +424,23 @@ export class Game extends SquareObject {
         } else if (this.gameState === GAMESTATE.PAUSED) {
             this.gameState = GAMESTATE.RUNNING;
         }
+    }
+
+    scoreFactor() {
+        let levelFactor = this.data.level;
+        let angularVelocity = this.gamePanel.ball.angularVelocity();
+        let rpm = Math.abs((angularVelocity * 1000 * 60) / (2 * Math.PI));
+        let spinFactor = Math.floor(
+            1 + (7 * Math.log((100 + rpm) / 100)) / Math.log(21)
+        );
+        return { levelFactor, spinFactor };
+    }
+
+    difficultyFactor() {
+        let friction =
+            1 - Math.pow(1 - this.settings.friction, this.data.level);
+        let frictionFactor = friction / this.settings.friction;
+        let gravityFactor = this.data.level;
+        return { frictionFactor, gravityFactor };
     }
 }

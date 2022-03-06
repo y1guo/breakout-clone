@@ -23,10 +23,20 @@ export class Paddle extends SquareObject {
 
         // paddle stops at the walls
         let wall = this.gamePanel.edge();
+        let velocity = this.velocity();
         if (this.edge().left < wall.left) {
             this.setPosition(wall.left, this.position().y);
+            this.setVelocity(0, velocity.y);
         } else if (this.edge().right > wall.right) {
             this.setPosition(wall.right - this.width(), this.position().y);
+            this.setVelocity(0, velocity.y);
+        }
+        if (this.edge().top < wall.top) {
+            this.setPosition(this.position().x, wall.top);
+            this.setVelocity(velocity.x, 0);
+        } else if (this.edge().bottom > wall.bottom) {
+            this.setPosition(this.position().x, wall.bottom - this.height());
+            this.setVelocity(velocity.x, 0);
         }
     }
 
