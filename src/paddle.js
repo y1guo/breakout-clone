@@ -4,7 +4,9 @@ export class Paddle extends SquareObject {
     constructor(gamePanel) {
         super();
         this.gamePanel = gamePanel;
-        this.maxSpeed = gamePanel.game.settings.paddleMaxSpeed;
+        this.maxSpeed =
+            gamePanel.game.settings.paddleMaxSpeed *
+            Math.pow(1.1, this.gamePanel.game.data.level);
     }
 
     setVelocityAngle(angle) {

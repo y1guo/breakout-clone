@@ -167,10 +167,7 @@ class InfoPanel extends SquareObject {
         );
         ctx.fillText(
             "Friction: " +
-                Math.round(ball.friction / settings.friction).toString() +
-                "  (" +
-                ball.friction.toFixed(2).toString() +
-                ")",
+                Math.round(ball.friction / settings.friction).toString(),
             edge.left,
             edge.bottom
         );
@@ -311,7 +308,7 @@ export class Game extends SquareObject {
             paddleHeight: 0.025 * this.gamePanel.width(),
             paddleMaxSpeed: this.gamePanel.width() / 2000,
             ballSize: this.gamePanel.width() * 0.08,
-            friction: 5e-4,
+            friction: 5e-3,
             gravity: 3e-4,
             bounceLoss: 0.1,
             brickNumRowMin: 4,
